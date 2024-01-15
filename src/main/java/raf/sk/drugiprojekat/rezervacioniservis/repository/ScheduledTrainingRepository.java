@@ -1,12 +1,14 @@
 package raf.sk.drugiprojekat.rezervacioniservis.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import raf.sk.drugiprojekat.rezervacioniservis.domain.ScheduledTraining;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface ScheduledTrainingRepository extends JpaRepository<ScheduledTraining, Long> {
     Optional<ScheduledTraining> findScheduledTrainingById(Long id);
     Optional<List<ScheduledTraining>> findAllScheduledTrainingsByOffer_gym_nameAndOffer_training_nameAndOffer_training_individualAndReservedSpotsLessThan(String offer_gym_name, String offer_training_name, Boolean offer_training_individual, Long reservedSpots);

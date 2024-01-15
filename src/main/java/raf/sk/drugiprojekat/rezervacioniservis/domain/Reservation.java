@@ -5,19 +5,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Getter @Setter @NoArgsConstructor
-public class ScheduledTraining {
+public class Reservation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    private Offer offer;
-    private LocalDateTime timeSlot;
-    private Long reservedSpots;
-    @OneToMany
-    private List<Reservation> reservations;
+    private ScheduledTraining scheduledTraining;
+    private Long discountedPrice;
+    private Long clientId;
 }
