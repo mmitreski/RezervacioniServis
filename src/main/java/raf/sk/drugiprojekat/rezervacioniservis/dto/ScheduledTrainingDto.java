@@ -12,4 +12,5 @@ public class ScheduledTrainingDto {
     private OfferDto offerDto;
     private LocalDateTime timeSlot;
     private Long reservedSpots;
+    private Long max;
 }

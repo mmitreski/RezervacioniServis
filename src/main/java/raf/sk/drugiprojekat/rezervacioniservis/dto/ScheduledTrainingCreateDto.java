@@ -10,8 +10,10 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class ScheduledTrainingCreateDto {
-    @Positive
+    @NotNull @Positive
     private Long offerId;
     @NotNull
     private LocalDateTime timeSlot;
+    @Positive
+    private Long max;
 }

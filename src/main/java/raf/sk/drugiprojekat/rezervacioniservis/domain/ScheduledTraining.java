@@ -17,7 +17,8 @@ public class ScheduledTraining {
     @ManyToOne
     private Offer offer;
     private LocalDateTime timeSlot;
+    private Long max;
     private Long reservedSpots;
-    @OneToMany
+    @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Reservation> reservations;
 }

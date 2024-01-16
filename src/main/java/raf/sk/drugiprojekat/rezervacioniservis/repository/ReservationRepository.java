@@ -11,7 +11,6 @@ import java.util.Optional;
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
     Optional<Reservation> findReservationById(Long id);
-    Optional<List<Reservation>> findAllReservationsByClientId(Long clientId);
-    Optional<List<Reservation>> findAllReservationsByScheduledTraining_id(Long scheduledTraining_id);
-    Optional<List<Reservation>> findAllReservationsByScheduledTraining_offer_gym_nameAndScheduledTraining_offer_training_nameAndScheduledTraining_offer_training_individual(String scheduledTraining_offer_gym_name, String scheduledTraining_offer_training_name, Boolean scheduledTraining_offer_training_individual);
+    List<Reservation> findAllReservationsByClientId(Long clientId);
+    List<Reservation> findAllReservationsByScheduledTraining_id(Long scheduledTraining_id);
 }

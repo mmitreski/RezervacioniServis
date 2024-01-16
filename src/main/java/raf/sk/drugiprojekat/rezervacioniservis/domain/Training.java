@@ -15,6 +15,6 @@ public class Training {
     private Long id;
     private String name;
     private Boolean individual;
-    @OneToMany
+    @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Offer> scheduledTrainingList;
 }

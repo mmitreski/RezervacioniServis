@@ -17,6 +17,6 @@ public class Gym {
     private String description;
     private Long trainerNumber;
     private Long managerId;
-    @OneToMany
+    @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Offer> scheduledTrainingList;
 }

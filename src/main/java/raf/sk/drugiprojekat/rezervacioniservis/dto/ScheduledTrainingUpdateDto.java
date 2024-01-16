@@ -10,4 +10,5 @@ import java.time.LocalDateTime;
 public class ScheduledTrainingUpdateDto {
     private Long offerId;
     private LocalDateTime timeSlot;
+    private Long max;
 }

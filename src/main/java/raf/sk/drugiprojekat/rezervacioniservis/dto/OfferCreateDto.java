@@ -3,15 +3,16 @@ package raf.sk.drugiprojekat.rezervacioniservis.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 
 @Getter
 @Setter
 public class OfferCreateDto {
-    @Positive
+    @NotNull @Positive
     private Long gymId;
-    @Positive
+    @NotNull @Positive
     private Long trainingId;
-    @Positive
+    @NotNull @Positive
     private Long price;
 }

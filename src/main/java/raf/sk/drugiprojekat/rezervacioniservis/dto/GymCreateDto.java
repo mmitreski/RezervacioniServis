@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 
 @Getter
@@ -13,6 +14,6 @@ public class GymCreateDto {
     private String name;
     private String description;
     private Long trainerNumber;
-    @Positive
+    @NotNull @Positive
     private Long managerId;
 }
