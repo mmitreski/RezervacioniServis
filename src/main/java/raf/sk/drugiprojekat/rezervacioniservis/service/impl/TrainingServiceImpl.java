@@ -1,5 +1,6 @@
 package raf.sk.drugiprojekat.rezervacioniservis.service.impl;
 
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +14,7 @@ import raf.sk.drugiprojekat.rezervacioniservis.repository.TrainingRepository;
 import raf.sk.drugiprojekat.rezervacioniservis.service.TrainingService;
 
 @Service
+@Transactional
 @AllArgsConstructor
 public class TrainingServiceImpl implements TrainingService {
 

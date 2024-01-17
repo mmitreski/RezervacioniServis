@@ -1,8 +1,9 @@
 package raf.sk.drugiprojekat.rezervacioniservis.controller;
 
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,7 +16,7 @@ import raf.sk.drugiprojekat.rezervacioniservis.dto.TrainingUpdateDto;
 import raf.sk.drugiprojekat.rezervacioniservis.security.CheckSecurity;
 import raf.sk.drugiprojekat.rezervacioniservis.service.TrainingService;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/training")
@@ -23,12 +24,12 @@ import javax.validation.Valid;
 public class TrainingController {
     private TrainingService trainingService;
 
-    @ApiOperation(value = "Get all trainings")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "page", value = "What page number you want", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "size", value = "Number of items to return", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "sort", allowMultiple = true, dataType = "string", paramType = "query",
-                    value = "Sorting criteria in the format: property(,asc|desc). " +
+    @Operation(summary = "Get all gym")
+    @Parameters({
+            @Parameter(name = "page", description = "What page number you want", in = ParameterIn.QUERY),
+            @Parameter(name = "size", description = "Number of items to return", in = ParameterIn.QUERY),
+            @Parameter(name = "sort", in = ParameterIn.QUERY,
+                    description = "Sorting criteria in the format: property(,asc|desc). " +
                             "Default sort order is ascending. " +
                             "Multiple sort criteria are supported.")})
     @GetMapping("/all")
@@ -36,34 +37,34 @@ public class TrainingController {
         return new ResponseEntity<>(trainingService.findAll(pageable), HttpStatus.OK);
     }
 
-    @ApiOperation(value = "Get training by id")
+    @Operation(summary = "Get training by id")
     @GetMapping(params = {"id"})
     public ResponseEntity<TrainingDto> getById(@RequestParam("id") Long id) {
         return new ResponseEntity<>(trainingService.findById(id), HttpStatus.OK);
     }
 
-    @ApiOperation(value = "Get training by name and individual")
+    @Operation(summary = "Get training by name and individual")
     @GetMapping(params = {"name", "individual"})
     public ResponseEntity<TrainingDto> getByNameAndIndividual(@RequestParam("name") String name, @RequestParam("individual") Boolean individual) {
         return new ResponseEntity<>(trainingService.findByNameAndIndividual(name, individual), HttpStatus.OK);
     }
 
-    @ApiOperation(value = "Create training")
-    @CheckSecurity(roles = {"ROLE_ADMIN"})
+    @Operation(summary = "Create training")
+    @CheckSecurity(roles = {"ROLEADMIN"})
     @PostMapping
     public ResponseEntity<TrainingDto> createTraining(@RequestHeader("authorization") String authorization, @RequestBody @Valid TrainingCreateDto trainingCreateDto) {
         return new ResponseEntity<>(trainingService.add(trainingCreateDto), HttpStatus.CREATED);
     }
 
-    @ApiOperation(value = "Update training")
-    @CheckSecurity(roles = {"ROLE_ADMIN"})
+    @Operation(summary = "Update training")
+    @CheckSecurity(roles = {"ROLEADMIN"})
     @PutMapping
     public ResponseEntity<TrainingDto> updateTraining(@RequestHeader("authorization") String authorization,@RequestParam("id") Long id, @RequestBody(required = false) @Valid TrainingUpdateDto trainingUpdateDto) {
         return new ResponseEntity<>(trainingService.update(id, trainingUpdateDto), HttpStatus.ACCEPTED);
     }
 
-    @ApiOperation(value = "Delete training")
-    @CheckSecurity(roles = {"ROLE_ADMIN"})
+    @Operation(summary = "Delete training")
+    @CheckSecurity(roles = {"ROLEADMIN"})
     @DeleteMapping
     public ResponseEntity<?> deleteTraining(@RequestHeader("authorization") String authorization, @RequestParam("id") Long id) {
         trainingService.deleteById(id);

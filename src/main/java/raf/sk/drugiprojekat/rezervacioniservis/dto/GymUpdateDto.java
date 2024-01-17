@@ -10,4 +10,5 @@ public class GymUpdateDto {
     private String description;
     private Long trainerNumber;
     private Long managerId;
+    private Long trainingDiscountNumber;
 }

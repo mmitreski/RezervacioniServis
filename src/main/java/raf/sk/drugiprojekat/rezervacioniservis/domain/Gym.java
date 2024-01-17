@@ -1,10 +1,10 @@
 package raf.sk.drugiprojekat.rezervacioniservis.domain;
 
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.*;
 import java.util.List;
 
 @Entity
@@ -17,6 +17,7 @@ public class Gym {
     private String description;
     private Long trainerNumber;
     private Long managerId;
+    private Long trainingDiscountNumber;
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Offer> scheduledTrainingList;
 }

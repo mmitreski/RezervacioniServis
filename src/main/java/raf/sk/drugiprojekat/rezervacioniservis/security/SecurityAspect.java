@@ -40,11 +40,11 @@ public class SecurityAspect {
                 id = Integer.parseInt(joinPoint.getArgs()[i].toString());
             }
         }
-
         if(token == null)
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
         Claims claims = tokenService.parseToken(token);
+        System.out.println(claims);
         if(claims == null)
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
@@ -52,17 +52,17 @@ public class SecurityAspect {
         String role = claims.get("role", String.class);
 
         int claims_id = switch (role) {
-            case "ROLE_ADMIN" -> claims.get("admin_id", Integer.class);
-            case "ROLE_MANAGER" -> claims.get("manager_id", Integer.class);
-            case "ROLE_CLIENT" -> claims.get("client_id", Integer.class);
+            case "ROLEADMIN" -> claims.get("adminid", Integer.class);
+            case "ROLEMANAGER" -> claims.get("managerid", Integer.class);
+            case "ROLECLIENT" -> claims.get("clientid", Integer.class);
             default -> -1;
         }; // id from the token
 
         if(Arrays.asList(checkSecurity.roles()).contains(role)) {
-            if(role.equals("ROLE_ADMIN")) {
+            if(role.equals("ROLEADMIN")) {
                 if(!checkSecurity.admin_id_required() || id == claims_id) // if the id is required and the id's match or if the id is not required then proceed
                     return joinPoint.proceed();
-            } else if(role.equals("ROLE_MANAGER")) {
+            } else if(role.equals("ROLEMANAGER")) {
                 if(!checkSecurity.manager_id_required() || id == claims_id)
                     return joinPoint.proceed();
             } else {

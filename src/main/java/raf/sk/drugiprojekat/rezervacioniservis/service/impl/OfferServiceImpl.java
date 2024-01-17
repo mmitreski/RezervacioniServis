@@ -1,5 +1,6 @@
 package raf.sk.drugiprojekat.rezervacioniservis.service.impl;
 
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +16,7 @@ import raf.sk.drugiprojekat.rezervacioniservis.service.OfferService;
 import java.util.List;
 
 @Service
+@Transactional
 @AllArgsConstructor
 public class OfferServiceImpl implements OfferService {
     private OfferRepository offerRepository;

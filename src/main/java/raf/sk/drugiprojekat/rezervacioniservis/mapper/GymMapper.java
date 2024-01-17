@@ -20,6 +20,7 @@ public class GymMapper {
         gymDto.setManagerId(gym.getManagerId());
         gymDto.setTrainerNumber(gym.getTrainerNumber());
         gymDto.setName(gym.getName());
+        gymDto.setTrainingDiscountNumber(gym.getTrainingDiscountNumber());
         return gymDto;
     }
 
@@ -29,6 +30,7 @@ public class GymMapper {
         gym.setDescription(gymCreateDto.getDescription());
         gym.setName(gymCreateDto.getName());
         gym.setTrainerNumber(gymCreateDto.getTrainerNumber());
+        gym.setTrainingDiscountNumber(gymCreateDto.getTrainingDiscountNumber());
         return gym;
     }
 
@@ -46,6 +48,9 @@ public class GymMapper {
         }
         if(gymUpdateDto.getTrainerNumber() != null) {
             gym.setTrainerNumber(gymUpdateDto.getTrainerNumber());
+        }
+        if(gymUpdateDto.getTrainingDiscountNumber() != null) {
+            gym.setTrainingDiscountNumber(gymUpdateDto.getTrainingDiscountNumber());
         }
         return gym;
     }

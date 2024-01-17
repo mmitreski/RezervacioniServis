@@ -1,11 +1,19 @@
 package raf.sk.drugiprojekat.rezervacioniservis.mapper;
 
+import io.github.resilience4j.retry.Retry;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.reactive.function.client.WebClient;
 import raf.sk.drugiprojekat.rezervacioniservis.domain.Reservation;
+import raf.sk.drugiprojekat.rezervacioniservis.dto.ClientDto;
 import raf.sk.drugiprojekat.rezervacioniservis.dto.ReservationCreateDto;
 import raf.sk.drugiprojekat.rezervacioniservis.dto.ReservationDto;
+import raf.sk.drugiprojekat.rezervacioniservis.exception.ClientForbiddenException;
+import raf.sk.drugiprojekat.rezervacioniservis.exception.ClientNotConfirmedException;
 import raf.sk.drugiprojekat.rezervacioniservis.exception.NotFoundException;
+import raf.sk.drugiprojekat.rezervacioniservis.exception.TrainingFullException;
 import raf.sk.drugiprojekat.rezervacioniservis.repository.ScheduledTrainingRepository;
 
 @Component
@@ -13,6 +21,7 @@ import raf.sk.drugiprojekat.rezervacioniservis.repository.ScheduledTrainingRepos
 public class ReservationMapper {
     private ScheduledTrainingMapper scheduledTrainingMapper;
     private ScheduledTrainingRepository scheduledTrainingRepository;
+    private Retry reservationServiceRetry;
     public ReservationDto reservationToReservationDto(Reservation reservation) {
         ReservationDto reservationDto = new ReservationDto();
         reservationDto.setId(reservation.getId());
@@ -24,10 +33,45 @@ public class ReservationMapper {
 
     public Reservation reservationCreateDtoToReservation(ReservationCreateDto reservationCreateDto) {
         Reservation reservation = new Reservation();
+
+        // set client id
         reservation.setClientId(reservationCreateDto.getClientId());
-        // send the request for the discounted price?
-        reservation.setScheduledTraining(scheduledTrainingRepository.findScheduledTrainingById(reservationCreateDto.getScheduledTrainingId()).orElseThrow(() -> new NotFoundException(String
-                .format("SCHEDULED TRAINING [id: %d] NOT FOUND.", reservationCreateDto.getScheduledTrainingId()))));
+
+        // get number of training reserved for the client
+        ClientDto clientDto = null;
+        try {
+            WebClient client = WebClient.create("http://localhost:8080/api");
+            WebClient.UriSpec<WebClient.RequestBodySpec> uriSpec = (WebClient.UriSpec<WebClient.RequestBodySpec>) client.get();
+            clientDto = Retry.decorateSupplier(reservationServiceRetry, () -> uriSpec.uri("/client?id="+reservationCreateDto.getClientId()).retrieve().bodyToMono(ClientDto.class).block()).get();
+        } catch (HttpClientErrorException e) {
+            if(e.getStatusCode().equals(HttpStatus.NOT_FOUND))
+                throw new NotFoundException(String.format("CLIENT [id: %d] NOT FOUND.", reservationCreateDto.getClientId()));
+        } catch (Exception e) {
+            new RuntimeException("Internal server error");
+        }
+
+        // set the scheduled training
+        reservation.setScheduledTraining(scheduledTrainingRepository.findScheduledTrainingById(reservationCreateDto.getScheduledTrainingId()).orElseThrow(() -> new NotFoundException(String.format("SCHEDULED TRAINING [id: %d] NOT FOUND.", reservationCreateDto.getScheduledTrainingId()))));
+
+        // set the price
+        if(clientDto.getTrainingsReserved() % reservation.getScheduledTraining().getOffer().getGym().getTrainingDiscountNumber() == 0) {
+            reservation.setDiscountedPrice(0L);
+        } else {
+            reservation.setDiscountedPrice(reservation.getScheduledTraining().getOffer().getPrice());
+        }
+
+        // can the client reserve a training?
+        if(!clientDto.getConfirmed())
+            throw new ClientNotConfirmedException(String.format("CLIENT [id: %d] NOT CONFIRMED", clientDto.getId()));
+        if(clientDto.getForbidden())
+            throw new ClientForbiddenException(String.format("CLIENT [id: %d] FORBIDDEN", clientDto.getId()));
+        if(reservation.getScheduledTraining().getReservedSpots() == reservation.getScheduledTraining().getMax())
+            throw new TrainingFullException(String.format("TRAINING [id: %d] IS FULL", reservation.getId()));
+
+        // if the client can reserve a training
+        reservation.getScheduledTraining().setReservedSpots(reservation.getScheduledTraining().getReservedSpots()+1);
+
+        // return the reservation which will be saved in the service class
         return reservation;
     }
 }

@@ -22,7 +22,7 @@ public interface ScheduledTrainingService {
     List<ScheduledTrainingDto> findByGymNameAndTrainingNameAndTrainingIndividual(String gymName, String trainingName, Boolean trainingIndividual);
     List<ScheduledTrainingDto> findByTrainingIndividual(Boolean trainingIndividual);
     List<ScheduledTrainingDto> findByGymNameAndTrainingIndividual(String gymName, Boolean trainingIndividual);
-    List<ScheduledTrainingDto> findByGymNameAndWeekday(String gymName, DayOfWeek dayOfWeek);
+    List<ScheduledTrainingDto> findByGymNameAndWeekday(String gymName, String dayOfWeek);
     List<ScheduledTrainingDto> findByGymNameAndTimeSlotBetween(String gymName, LocalDateTime startDate, LocalDateTime endDate);
     /*** FREE ***/
     List<ScheduledTrainingDto> findByTimeSlotFree(LocalDateTime timeSlot);
@@ -32,9 +32,9 @@ public interface ScheduledTrainingService {
     List<ScheduledTrainingDto> findByGymNameAndTrainingNameAndTrainingIndividualFree(String gymName, String trainingName, Boolean trainingIndividual);
     List<ScheduledTrainingDto> findByTrainingIndividualFree(Boolean trainingIndividual);
     List<ScheduledTrainingDto> findByGymNameAndTrainingIndividualFree(String gymName, Boolean trainingIndividual);
-    List<ScheduledTrainingDto> findByGymNameAndWeekdayFree(String gymName, DayOfWeek dayOfWeek);
+    List<ScheduledTrainingDto> findByGymNameAndWeekdayFree(String gymName, String dayOfWeek);
     List<ScheduledTrainingDto> findByGymNameAndTimeSlotBetweenFree(String gymName, LocalDateTime startDate, LocalDateTime endDate);
     ScheduledTrainingDto create(ScheduledTrainingCreateDto scheduledTrainingCreateDto);
-    ScheduledTrainingCreateDto update(Long id, ScheduledTrainingUpdateDto scheduledTrainingUpdateDto);
+    ScheduledTrainingDto update(Long id, ScheduledTrainingUpdateDto scheduledTrainingUpdateDto);
     void deleteById(Long id);
 }
