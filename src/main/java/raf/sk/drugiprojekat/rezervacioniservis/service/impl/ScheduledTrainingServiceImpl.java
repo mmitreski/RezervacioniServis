@@ -1,17 +1,19 @@
 package raf.sk.drugiprojekat.rezervacioniservis.service.impl;
 
+import io.github.resilience4j.retry.Retry;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.reactive.function.client.WebClient;
 import raf.sk.drugiprojekat.rezervacioniservis.domain.Reservation;
 import raf.sk.drugiprojekat.rezervacioniservis.domain.ScheduledTraining;
-import raf.sk.drugiprojekat.rezervacioniservis.dto.ScheduledTrainingCreateDto;
-import raf.sk.drugiprojekat.rezervacioniservis.dto.ScheduledTrainingDto;
-import raf.sk.drugiprojekat.rezervacioniservis.dto.ScheduledTrainingUpdateDto;
+import raf.sk.drugiprojekat.rezervacioniservis.dto.*;
 import raf.sk.drugiprojekat.rezervacioniservis.exception.NotFoundException;
 import raf.sk.drugiprojekat.rezervacioniservis.mapper.ScheduledTrainingMapper;
 import raf.sk.drugiprojekat.rezervacioniservis.repository.ScheduledTrainingRepository;
@@ -20,7 +22,9 @@ import raf.sk.drugiprojekat.rezervacioniservis.service.ScheduledTrainingService;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -28,8 +32,9 @@ public class ScheduledTrainingServiceImpl implements ScheduledTrainingService {
     private ScheduledTrainingRepository scheduledTrainingRepository;
     private ScheduledTrainingMapper scheduledTrainingMapper;
     private JmsTemplate jmsTemplate;
-    @Value("${destination.createManagerCancelNotification}")
-    private String cancelManager;
+    private Retry reservationServiceRetry;
+    @Value("${destination.sendEmails}")
+    private String mailNotification;
     @Value("${destination.createClientCancelUser")
     private String cancelUser;
     private Comparator<ScheduledTrainingDto> comparator = (o1, o2) -> {
@@ -41,10 +46,11 @@ public class ScheduledTrainingServiceImpl implements ScheduledTrainingService {
             return 1;
     };
 
-    public ScheduledTrainingServiceImpl(ScheduledTrainingRepository scheduledTrainingRepository, ScheduledTrainingMapper scheduledTrainingMapper, JmsTemplate jmsTemplate) {
+    public ScheduledTrainingServiceImpl(ScheduledTrainingRepository scheduledTrainingRepository, ScheduledTrainingMapper scheduledTrainingMapper, JmsTemplate jmsTemplate, Retry reservationServiceRetry) {
         this.scheduledTrainingMapper = scheduledTrainingMapper;
         this.scheduledTrainingRepository = scheduledTrainingRepository;
         this.jmsTemplate = jmsTemplate;
+        this.reservationServiceRetry = reservationServiceRetry;
     }
 
     @Override
@@ -171,10 +177,39 @@ public class ScheduledTrainingServiceImpl implements ScheduledTrainingService {
     @Override
     public void deleteById(Long id) {
         ScheduledTraining scheduledTraining = scheduledTrainingRepository.findById(id).orElseThrow(()-> new NotFoundException(String.format("SCHEDULED TRAINING [id: %d] NOT FOUND", id)));
+        Map<Long, String> clientMails = new HashMap<>();
+        for(Reservation r : scheduledTraining.getReservations()) {
+            ClientDto clientDto = null;
+            try {
+                WebClient client = WebClient.create("http://localhost:8080/api");
+                WebClient.UriSpec<WebClient.RequestBodySpec> uriSpec = (WebClient.UriSpec<WebClient.RequestBodySpec>) client.get();
+                clientDto = Retry.decorateSupplier(reservationServiceRetry, () -> uriSpec.uri("/client?id="+r.getClientId()).retrieve().bodyToMono(ClientDto.class).block()).get();
+            } catch (HttpClientErrorException e) {
+                if(e.getStatusCode().equals(HttpStatus.NOT_FOUND))
+                    throw new NotFoundException(String.format("CLIENT [id: %d] NOT FOUND.", r.getClientId()));
+            } catch (Exception e) {
+                new RuntimeException("Internal server error");
+            }
+            clientMails.put(r.getClientId(), clientDto.getEmail());
+        }
+        ManagerDto managerDto = null;
+        try {
+            WebClient client = WebClient.create("http://localhost:8080/api");
+            WebClient.UriSpec<WebClient.RequestBodySpec> uriSpec = (WebClient.UriSpec<WebClient.RequestBodySpec>) client.get();
+            managerDto = Retry.decorateSupplier(reservationServiceRetry, () -> uriSpec.uri("/manager?id="+scheduledTraining.getOffer().getGym().getManagerId()).retrieve().bodyToMono(ManagerDto.class).block()).get();
+        } catch (HttpClientErrorException e) {
+            if(e.getStatusCode().equals(HttpStatus.NOT_FOUND))
+                throw new NotFoundException(String.format("MANAGER [id: %d] NOT FOUND.", scheduledTraining.getOffer().getGym().getManagerId()));
+        } catch (Exception e) {
+            new RuntimeException("Internal server error");
+        }
+        String subject = "Otkazan trening";
+        String content = "Postovani, obavestavamo vas da je trening " + scheduledTraining.getOffer().getTraining().getName() + " zakazan za " + scheduledTraining.getTimeSlot() + " u fiskulturnoj sali " + scheduledTraining.getOffer().getGym().getName() + " otkazan.";
         for(Reservation r : scheduledTraining.getReservations()) {
             jmsTemplate.convertAndSend(cancelUser, r.getClientId());
+            jmsTemplate.convertAndSend(mailNotification, new EmailCreateDto(clientMails.get(r.getClientId()), LocalDateTime.now(), subject, content));
         }
-        jmsTemplate.convertAndSend(cancelManager, new Object()); // to notification service
+        jmsTemplate.convertAndSend(mailNotification, new EmailCreateDto(managerDto.getEmail(), LocalDateTime.now(), subject, content)); // to notification service
         scheduledTrainingRepository.deleteById(id);
     }
 }

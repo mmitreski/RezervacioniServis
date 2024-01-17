@@ -31,36 +31,16 @@ public class ReservationMapper {
         return reservationDto;
     }
 
-    public Reservation reservationCreateDtoToReservation(ReservationCreateDto reservationCreateDto) {
+    public Reservation reservationCreateDtoToReservation(ClientDto clientDto, ReservationCreateDto reservationCreateDto) {
         Reservation reservation = new Reservation();
-
-        // set client id
         reservation.setClientId(reservationCreateDto.getClientId());
-
-        // get number of training reserved for the client
-        ClientDto clientDto = null;
-        try {
-            WebClient client = WebClient.create("http://localhost:8080/api");
-            WebClient.UriSpec<WebClient.RequestBodySpec> uriSpec = (WebClient.UriSpec<WebClient.RequestBodySpec>) client.get();
-            clientDto = Retry.decorateSupplier(reservationServiceRetry, () -> uriSpec.uri("/client?id="+reservationCreateDto.getClientId()).retrieve().bodyToMono(ClientDto.class).block()).get();
-        } catch (HttpClientErrorException e) {
-            if(e.getStatusCode().equals(HttpStatus.NOT_FOUND))
-                throw new NotFoundException(String.format("CLIENT [id: %d] NOT FOUND.", reservationCreateDto.getClientId()));
-        } catch (Exception e) {
-            new RuntimeException("Internal server error");
-        }
-
-        // set the scheduled training
         reservation.setScheduledTraining(scheduledTrainingRepository.findScheduledTrainingById(reservationCreateDto.getScheduledTrainingId()).orElseThrow(() -> new NotFoundException(String.format("SCHEDULED TRAINING [id: %d] NOT FOUND.", reservationCreateDto.getScheduledTrainingId()))));
-
-        // set the price
-        if(clientDto.getTrainingsReserved() % reservation.getScheduledTraining().getOffer().getGym().getTrainingDiscountNumber() == 0) {
+        if(reservation.getScheduledTraining().getOffer().getGym().getTrainingDiscountNumber() != 0 && clientDto.getTrainingsReserved() % reservation.getScheduledTraining().getOffer().getGym().getTrainingDiscountNumber() == 0) {
             reservation.setDiscountedPrice(0L);
         } else {
             reservation.setDiscountedPrice(reservation.getScheduledTraining().getOffer().getPrice());
         }
 
-        // can the client reserve a training?
         if(!clientDto.getConfirmed())
             throw new ClientNotConfirmedException(String.format("CLIENT [id: %d] NOT CONFIRMED", clientDto.getId()));
         if(clientDto.getForbidden())
@@ -68,10 +48,7 @@ public class ReservationMapper {
         if(reservation.getScheduledTraining().getReservedSpots() == reservation.getScheduledTraining().getMax())
             throw new TrainingFullException(String.format("TRAINING [id: %d] IS FULL", reservation.getId()));
 
-        // if the client can reserve a training
         reservation.getScheduledTraining().setReservedSpots(reservation.getScheduledTraining().getReservedSpots()+1);
-
-        // return the reservation which will be saved in the service class
         return reservation;
     }
 }
